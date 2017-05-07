@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    JBoss, Home of Professional Open Source
+    Copyright 2014, Red Hat, Inc. and/or its affiliates, and individual
+    contributors by the @authors tag. See the copyright.txt in the
+    distribution for a full listing of individual contributors.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<!-- Configures the Camel Context-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean class="com.test.JPATest" id="jpatest"/>
+    <bean class="org.apache.camel.component.jpa.JpaComponent" id="jpa">
+        <property name="entityManagerFactory" ref="entityManagerFactory"/>
+    </bean>
+    <bean
+        class="org.springframework.transaction.support.TransactionTemplate" id="transactionTemplate">
+        <property name="transactionManager">
+            <bean class="org.springframework.orm.jpa.JpaTransactionManager">
+                <property name="entityManagerFactory" ref="entityManagerFactory"/>
+            </bean>
+        </property>
+    </bean>
+    <bean class="org.springframework.orm.jpa.JpaTemplate" id="jpaTemplate">
+        <property name="entityManagerFactory" ref="entityManagerFactory"/>
+    </bean>
+    <bean
+        class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" id="entityManagerFactory">
+        <property name="persistenceUnitName" value="camel"/>
+        <property name="jpaVendorAdapter" ref="jpaAdapter"/>
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <bean
+        class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" id="jpaAdapter">
+        <property name="databasePlatform" value="org.hibernate.dialect.MySQLDialect"/>
+    </bean>
+    <bean class="org.apache.commons.dbcp.BasicDataSource" id="dataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/test"/>
+        <property name="username" value="root"/>
+        <property name="password" value="root"/>
+    </bean>
+    <bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <camelContext id="_camelContext1" xmlns="http://camel.apache.org/schema/spring">
+        <dataFormats>
+            <jaxb contextPath="com.test" id="myJaxb" prettyPrint="true"/>
+        </dataFormats>
+        <route id="_route1">
+            <!--  <from id="_from1" uri="jpa://com.test.DarpanTest?consumer.query=select o from com.test.DarpanTest o &amp;consumeDelete=false&amp;maxMessagesPerPoll=5&amp;maximumResults=5"/> -->
+            <from id="_from1" uri="sql:select * from darpantest"/>
+            <log id="_log1" message="jpa body ............${body}"/>
+            <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
+            <marshal id="_marshal1" ref="myJaxb"/>
+            <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
+            <log id="_log2" message="${body}"/>
+            <to id="_to1" uri="bean:jpatest?method=readContent"/>
+        </route>
+    </camelContext>
+</beans>
